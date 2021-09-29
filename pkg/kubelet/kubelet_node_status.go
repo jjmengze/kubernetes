@@ -300,17 +300,21 @@ func (kl *Kubelet) initialNode(ctx context.Context) (*v1.Node, error) {
 			Unschedulable: !kl.registerSchedulable,
 		},
 	}
+	//取得 os 標籤 ，目前似乎沒實作。
 	osLabels, err := getOSSpecificLabels()
 	if err != nil {
 		return nil, err
 	}
+	//設定標籤到 node 上
 	for label, value := range osLabels {
 		node.Labels[label] = value
 	}
-
+	//設定 taint標籤
 	nodeTaints := make([]v1.Taint, 0)
 	if len(kl.registerWithTaints) > 0 {
 		taints := make([]v1.Taint, len(kl.registerWithTaints))
+		//因為 registerWithTaints 的型態為  api.Taint 屬於 core group 的需要轉換成
+		//v1.Taint 的型態。
 		for i := range kl.registerWithTaints {
 			if err := k8s_api_v1.Convert_core_Taint_To_v1_Taint(&kl.registerWithTaints[i], &taints[i], nil); err != nil {
 				return nil, err
@@ -326,11 +330,14 @@ func (kl *Kubelet) initialNode(ctx context.Context) (*v1.Node, error) {
 
 	// Taint node with TaintNodeUnschedulable when initializing
 	// node to avoid race condition; refer to #63897 for more detail.
+	//如果 node spec 有寫 Unschedulable 以及 nodeTaints 沒有 key node.kubernetes.io/unschedulable value NoSchedule 的標記的話就
+	//幫忙標記
 	if node.Spec.Unschedulable &&
 		!taintutil.TaintExists(nodeTaints, &unschedulableTaint) {
 		nodeTaints = append(nodeTaints, unschedulableTaint)
 	}
 
+	//先不考慮cloud provider的情況有點麻煩
 	if kl.externalCloudProvider {
 		taint := v1.Taint{
 			Key:    cloudproviderapi.TaintExternalCloudProvider,
@@ -340,6 +347,7 @@ func (kl *Kubelet) initialNode(ctx context.Context) (*v1.Node, error) {
 
 		nodeTaints = append(nodeTaints, taint)
 	}
+	//設定 node taint 到 spec 上
 	if len(nodeTaints) > 0 {
 		node.Spec.Taints = nodeTaints
 	}

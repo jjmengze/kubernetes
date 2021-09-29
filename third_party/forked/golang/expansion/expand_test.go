@@ -10,7 +10,7 @@ func TestMapReference(t *testing.T) {
 	envs := []api.EnvVar{
 		{
 			Name:  "FOO",
-			Value: "bar",
+			Value: "ls -al $(VAR_A)",
 		},
 		{
 			Name:  "ZOO",

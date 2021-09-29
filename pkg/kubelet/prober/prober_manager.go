@@ -17,6 +17,7 @@ limitations under the License.
 package prober
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -138,6 +139,7 @@ const (
 
 // For debugging.
 func (t probeType) String() string {
+	fmt.Println()
 	switch t {
 	case readiness:
 		return "Readiness"

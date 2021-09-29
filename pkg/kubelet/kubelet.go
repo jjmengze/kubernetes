@@ -1869,19 +1869,28 @@ func (kl *Kubelet) syncTerminatedPod(ctx context.Context, pod *v1.Pod, podStatus
 //   * pod whose work is ready.
 //   * internal modules that request sync of a pod.
 func (kl *Kubelet) getPodsToSync() []*v1.Pod {
+	//取得 node 上所有的 pod
 	allPods := kl.podManager.GetPods()
+	//從 queue 取出工作，也就是 pod id（會進入 queue 中的表示已經建立好 worker 了）
 	podUIDs := kl.workQueue.GetWork()
+	//建立一個 string set
 	podUIDSet := sets.NewString()
+	//把取出的工作塞入 string set 中
 	for _, podUID := range podUIDs {
 		podUIDSet.Insert(string(podUID))
 	}
+
+
 	var podsToSync []*v1.Pod
 	for _, pod := range allPods {
+		// 已經準備好的 pod worker 才需要sync
 		if podUIDSet.Has(string(pod.UID)) {
 			// The work of the pod is ready
 			podsToSync = append(podsToSync, pod)
 			continue
 		}
+		//好吧，我找不到哪邊生成 PodSyncLoopHandlers，無法猜測他要做什麼。
+		//請大神幫忙QQ
 		for _, podSyncLoopHandler := range kl.PodSyncLoopHandlers {
 			if podSyncLoopHandler.ShouldSync(pod) {
 				podsToSync = append(podsToSync, pod)
@@ -2105,6 +2114,7 @@ func (kl *Kubelet) syncLoopIteration(configCh <-chan kubetypes.PodUpdate, handle
 		}
 	case <-syncCh:
 		// Sync pods waiting for sync
+		//取得需要 sync 的 pod 們
 		podsToSync := kl.getPodsToSync()
 		if len(podsToSync) == 0 {
 			break
@@ -2301,6 +2311,7 @@ func (kl *Kubelet) HandlePodReconcile(pods []*v1.Pod) {
 func (kl *Kubelet) HandlePodSyncs(pods []*v1.Pod) {
 	start := kl.clock.Now()
 	for _, pod := range pods {
+		//從要 sync 的 pod 們取得 static pod
 		mirrorPod, _ := kl.podManager.GetMirrorPodByPod(pod)
 		kl.dispatchWork(pod, kubetypes.SyncPodSync, mirrorPod, start)
 	}

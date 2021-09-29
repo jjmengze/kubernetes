@@ -1,0 +1,36 @@
+nohup: ignoring input
++++ [0112 02:45:57] Building go targets for linux/amd64:
+    ./vendor/k8s.io/code-generator/cmd/prerelease-lifecycle-gen
++++ [0112 02:46:01] Building go targets for linux/amd64:
+    ./vendor/k8s.io/code-generator/cmd/deepcopy-gen
++++ [0112 02:46:10] Building go targets for linux/amd64:
+    ./vendor/k8s.io/code-generator/cmd/defaulter-gen
++++ [0112 02:46:21] Building go targets for linux/amd64:
+    ./vendor/k8s.io/code-generator/cmd/conversion-gen
++++ [0112 02:46:42] Building go targets for linux/amd64:
+    ./vendor/k8s.io/kube-openapi/cmd/openapi-gen
++++ [0112 02:46:57] Building go targets for linux/amd64:
+    ./vendor/github.com/go-bindata/go-bindata/go-bindata
++++ [0112 02:46:59] Building go targets for linux/amd64:
+    cmd/kube-proxy
+    cmd/kube-apiserver
+    cmd/kube-controller-manager
+    cmd/kubelet
+    cmd/kubeadm
+    cmd/kube-scheduler
+    vendor/k8s.io/kube-aggregator
+    vendor/k8s.io/apiextensions-apiserver
+    cluster/gce/gci/mounter
+    cmd/kubectl
+    cmd/gendocs
+    cmd/genkubedocs
+    cmd/genman
+    cmd/genyaml
+    cmd/genswaggertypedocs
+    cmd/linkcheck
+    vendor/github.com/onsi/ginkgo/ginkgo
+    test/e2e/e2e.test
+    cluster/images/conformance/go-runner
+    cmd/kubemark
+    vendor/github.com/onsi/ginkgo/ginkgo
+    test/e2e_node/e2e_node.test

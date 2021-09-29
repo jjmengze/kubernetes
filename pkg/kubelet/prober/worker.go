@@ -221,6 +221,7 @@ func (w *worker) doProbe() (keepGoing bool) {
 	if c.State.Running == nil {
 		klog.V(3).InfoS("Non-running container probed",
 			"pod", klog.KObj(w.pod), "containerName", w.container.Name)
+		//如果 container id 不是空的
 		if !w.containerID.IsEmpty() {
 			w.resultsManager.Set(w.containerID, results.Failure, w.pod)
 		}
@@ -229,7 +230,7 @@ func (w *worker) doProbe() (keepGoing bool) {
 			w.pod.Spec.RestartPolicy != v1.RestartPolicyNever
 	}
 
-	// Graceful shutdown of the pod.
+	// 可以把它想像成處於 Deletion 狀態的 pod ，且有設定 prob liveness 或是 startup，把透過 resultsManager 設定成成功，不然可能會把 container 刪掉。
 	if w.pod.ObjectMeta.DeletionTimestamp != nil && (w.probeType == liveness || w.probeType == startup) {
 		klog.V(3).InfoS("Pod deletion requested, setting probe result to success",
 			"probeType", w.probeType, "pod", klog.KObj(w.pod), "containerName", w.container.Name)
@@ -243,11 +244,12 @@ func (w *worker) doProbe() (keepGoing bool) {
 		return false
 	}
 
-	// Probe disabled for InitialDelaySeconds.
+	// 判斷 prob 的初始 Delay 時間是否到了，如果還沒到就需要等下一次觸發
 	if int32(time.Since(c.State.Running.StartedAt.Time).Seconds()) < w.spec.InitialDelaySeconds {
 		return true
 	}
 
+	//判斷 (過去) startup prob 是否已經成功，如果已經成功就可以關閉 worker
 	if c.Started != nil && *c.Started {
 		// Stop probing for startup once container has started.
 		// we keep it running to make sure it will work for restarted container.
@@ -264,12 +266,14 @@ func (w *worker) doProbe() (keepGoing bool) {
 	// TODO: in order for exec probes to correctly handle downward API env, we must be able to reconstruct
 	// the full container environment here, OR we must make a call to the CRI in order to get those environment
 	// values from the running container.
+	//時記趣執行各種 prob 的地方，如果 prob 有 error 直接停止 worker
 	result, err := w.probeManager.prober.probe(w.probeType, w.pod, status, w.container, w.containerID)
 	if err != nil {
 		// Prober error, throw away the result.
 		return true
 	}
 
+	//如果 prob 沒有 error 透過 ProberResults.With 去觸發 metric 以提供後續監控服務
 	switch result {
 	case results.Success:
 		ProberResults.With(w.proberResultsSuccessfulMetricLabels).Inc()
@@ -279,6 +283,7 @@ func (w *worker) doProbe() (keepGoing bool) {
 		ProberResults.With(w.proberResultsUnknownMetricLabels).Inc()
 	}
 
+	//用來判斷同一個 prob 結果，並且計算執行 prob 次數用
 	if w.lastResult == result {
 		w.resultRun++
 	} else {
